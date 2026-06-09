@@ -176,6 +176,8 @@ textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
 }
 .d-cname { font-size: 13px; font-weight: 400; color: var(--ink); }
 .d-cinfo { font-size: 12px; color: var(--ink); margin-top: 1px; line-height: 1.8; }
+.ph-box { display: inline-block; background: #e8e8e8; border-radius: 3px; height: 13px; vertical-align: middle; }
+.ph-line { display: block; background: #e8e8e8; border-radius: 3px; height: 11px; margin: 5px 0; }
 .d-nodate { text-align: right; font-size: 12px; color: var(--ink); line-height: 2; white-space: nowrap; }
 .d-nodate .lbl { color: var(--sub); }
 
@@ -314,13 +316,13 @@ textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
 
     <div class="sec">客戶資訊</div>
     <div class="f"><label>公司名稱</label>
-      <input type="text" id="cname" placeholder="富山麵家" oninput="render()">
+      <input type="text" id="cname" placeholder="公司名稱" oninput="render()">
     </div>
     <div class="f"><label>地址</label>
-      <input type="text" id="caddr" placeholder="香港銅鑼灣希雲街地下7號" oninput="render()">
+      <input type="text" id="caddr" placeholder="地址" oninput="render()">
     </div>
     <div class="f"><label>聯絡人 &amp; 電話</label>
-      <input type="text" id="ccont" placeholder="林少洛  +852-56464503" oninput="render()">
+      <input type="text" id="ccont" placeholder="聯絡人 & 電話" oninput="render()">
     </div>
 
     <div class="sec">報價品項</div>
@@ -337,14 +339,10 @@ textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
 
     <div class="sec">付款條款</div>
     <div class="f">
-      <textarea id="terms" oninput="render()">1. Full payment before shipment
-2. Bank account information
-   NAME：Iam Creative Industries Co.,Ltd
-   ADD：No.72, Ln. 533, Zhongfeng Rd., Longtan Dist., Taoyuan City 32560, Taiwan
-   BANK NAME：Hua Nan Commercial Bank Yangmei Branch
-   BANK ADD：No. 95, Dacheng Rd., Yangmei Dist., Taoyuan City 326, Taiwan (R.O.C.)
-   BANK ACCOUNT NO：242-97-0015389
-   SWIFT CODE：HNBKTWTP</textarea>
+      <textarea id="terms" oninput="render()">1. 以上報價不含稅不含運
+2. 訂金：50%於確認訂單時支付
+   尾款：50%於出貨前支付
+3. 交期：</textarea>
     </div>
 
     <div class="sec">簽名</div>
@@ -423,7 +421,7 @@ function renderTable(){
       <input value="${esc(r.desc)}" placeholder="品名說明" oninput="rows[${i}].desc=this.value;render()">
       <input value="${esc(r.note||'')}" placeholder="（選填）備註說明" style="margin-top:3px;font-size:11px;color:#888" oninput="rows[${i}].note=this.value;render()">
     </td>
-    <td class="c-p"><input type="number" step=".01" min="0" value="${r.price}" style="text-align:right" oninput="rows[${i}].price=parseFloat(this.value)||0;render()"></td>
+    <td class="c-p"><input type="number" step=".01" min="0" value="${r.price||''}" placeholder="0" style="text-align:right" oninput="rows[${i}].price=parseFloat(this.value)||0;render()"></td>
     <td class="c-q"><input type="number" step="1" min="0" value="${r.qty}" style="text-align:right" oninput="rows[${i}].qty=parseFloat(this.value)||0;render()"></td>
     <td class="c-x"><button class="x-btn" onclick="rows.splice(${i},1);renderAll()">×</button></td>
   </tr>`).join("");
@@ -453,10 +451,10 @@ function render(){
   const trows = rows.map((r,i) => {
     const noteRow = r.note ? `<tr><td colspan="4" style="padding-top:0;padding-bottom:6px;font-size:10px;color:#777;font-style:italic">&nbsp;&nbsp;&nbsp;&nbsp;${esc(r.note)}</td></tr>` : "";
     return `<tr>
-    <td>${i+1}. ${esc(r.desc)}</td>
-    <td class="r">${r.price>0 ? fmt(r.price,d) : "—"}</td>
+    <td>${i+1}. ${r.desc ? esc(r.desc) : '<span class="ph-box" style="width:120px"></span>'}</td>
+    <td class="r">${r.price>0 ? fmt(r.price,d) : '<span class="ph-box" style="width:40px"></span>'}</td>
     <td class="r">${r.qty!==1 ? r.qty : ""}</td>
-    <td class="r bold">${c}${fmt(r.price*r.qty,d)}</td>
+    <td class="r bold">${r.price>0 ? c+fmt(r.price*r.qty,d) : '<span class="ph-box" style="width:50px"></span>'}</td>
   </tr>${noteRow}`;
   }).join("");
 
@@ -475,8 +473,8 @@ function render(){
 
     <div class="d-meta-row">
       <div>
-        <div class="d-cname">${cn ? esc(cn) : '<span style="color:#ccc">客戶名稱</span>'}</div>
-        <div class="d-cinfo">${[ca,cc].filter(Boolean).map(esc).join("<br>")}</div>
+        <div class="d-cname">${cn ? esc(cn) : '<span class="ph-box" style="width:140px"></span>'}</div>
+        <div class="d-cinfo">${[ca,cc].filter(Boolean).map(esc).join("<br>") || '<span class="ph-line" style="width:200px"></span><span class="ph-line" style="width:160px"></span>'}</div>
       </div>
       <div class="d-nodate">
         <span class="lbl">No. : &nbsp;</span>${esc(no)||"—"}<br>
@@ -501,16 +499,15 @@ function render(){
       <div class="total-inner">
         <span class="total-lbl">Grand Total</span>
         <span class="total-spacer"></span>
-        <span class="total-val">${c}${grand}</span>
+        <span class="total-val">${rows.some(r=>r.price>0) ? c+grand : '<span class="ph-box" style="width:60px"></span>'}</span>
 
       </div>
     </div>
 
-    ${trm ? `
     <div class="d-terms">
       <div class="terms-h">Term</div>
-      <div class="terms-b">${esc(trm)}</div>
-    </div>` : ""}
+      <div class="terms-b">${trm ? esc(trm) : '<span class="ph-line" style="width:80%"></span><span class="ph-line" style="width:65%"></span><span class="ph-line" style="width:72%"></span><span class="ph-line" style="width:55%"></span>'}</div>
+    </div>
 
     <div class="d-sig">
       <div class="sig-labels">
