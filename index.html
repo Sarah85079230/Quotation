@@ -293,14 +293,23 @@ textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
         <input type="date" id="qdate" oninput="render()">
       </div>
     </div>
-    <div class="f"><label>幣別</label>
-      <select id="cur" onchange="renderAll()">
-        <option value="US$">美金 US$</option>
-        <option value="HK$">港幣 HK$</option>
-        <option value="NT$">台幣 NT$</option>
-        <option value="RMB¥">人民幣 RMB¥</option>
-        <option value="JPY¥">日幣 JPY¥</option>
-      </select>
+    <div class="grid2" style="margin-bottom:7px">
+      <div class="f"><label>幣別</label>
+        <select id="cur" onchange="onCurChange()">
+          <option value="US$">美金 US$</option>
+          <option value="HK$">港幣 HK$</option>
+          <option value="NT$">台幣 NT$</option>
+          <option value="RMB¥">人民幣 RMB¥</option>
+          <option value="JPY¥">日幣 JPY¥</option>
+        </select>
+      </div>
+      <div class="f"><label>小數位數</label>
+        <select id="dec" onchange="renderAll()">
+          <option value="0">0 位（如 1,234）</option>
+          <option value="1">1 位（如 1,234.5）</option>
+          <option value="2" selected>2 位（如 1,234.56）</option>
+        </select>
+      </div>
     </div>
 
     <div class="sec">客戶資訊</div>
@@ -381,8 +390,8 @@ function toggleCompact(){
 }
 
 let rows = [
-  { desc: "【MIFFY】粉色月亮-大小盤組(2入組)", price: 17.95, qty: 12 },
-  { desc: "運費（順豐）", price: 45.00, qty: 1 },
+  { desc: "【MIFFY】粉色月亮-大小盤組(2入組)", price: 17.95, qty: 12, note: "" },
+  { desc: "運費（順豐）", price: 45.00, qty: 1, note: "" },
 ];
 
 (function init(){
@@ -400,17 +409,28 @@ function fdate(s){
   return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+d.getFullYear();
 }
 function cur(){ return document.getElementById("cur").value; }
+function dec(){ return parseInt(document.getElementById("dec").value)||0; }
+function fmt(n, d){ return n.toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function onCurChange(){
+  const cv = document.getElementById("cur").value;
+  const autoD = (cv==="NT$"||cv==="JPY¥") ? "0" : "2";
+  document.getElementById("dec").value = autoD;
+  renderAll();
+}
 
 function renderTable(){
   document.getElementById("tbody").innerHTML = rows.map((r,i) => `<tr>
-    <td class="c-d"><input value="${esc(r.desc)}" placeholder="品名說明" oninput="rows[${i}].desc=this.value;render()"></td>
+    <td class="c-d">
+      <input value="${esc(r.desc)}" placeholder="品名說明" oninput="rows[${i}].desc=this.value;render()">
+      <input value="${esc(r.note||'')}" placeholder="（選填）備註說明" style="margin-top:3px;font-size:11px;color:#888" oninput="rows[${i}].note=this.value;render()">
+    </td>
     <td class="c-p"><input type="number" step=".01" min="0" value="${r.price}" style="text-align:right" oninput="rows[${i}].price=parseFloat(this.value)||0;render()"></td>
     <td class="c-q"><input type="number" step="1" min="0" value="${r.qty}" style="text-align:right" oninput="rows[${i}].qty=parseFloat(this.value)||0;render()"></td>
     <td class="c-x"><button class="x-btn" onclick="rows.splice(${i},1);renderAll()">×</button></td>
   </tr>`).join("");
 }
 
-function addRow(){ rows.push({desc:"",price:0,qty:1}); renderAll(); }
+function addRow(){ rows.push({desc:"",price:0,qty:1,note:""}); renderAll(); }
 function renderAll(){ renderTable(); render(); }
 
 function render(){
@@ -428,14 +448,18 @@ function render(){
   // 更新預覽
   const prev = document.getElementById("fontPreview");
   if (prev) { prev.style.fontFamily = sigFont; prev.style.fontWeight = sigWeight; prev.textContent = sig || "Sarah"; }
-  const grand = rows.reduce((s,r)=>s+r.price*r.qty,0).toFixed(2);
+  const d = dec();
+  const grand = fmt(rows.reduce((s,r)=>s+r.price*r.qty,0), d);
 
-  const trows = rows.map((r,i) => `<tr>
+  const trows = rows.map((r,i) => {
+    const noteRow = r.note ? `<tr><td colspan="4" style="padding-top:0;padding-bottom:6px;font-size:10px;color:#777;font-style:italic">&nbsp;&nbsp;&nbsp;&nbsp;${esc(r.note)}</td></tr>` : "";
+    return `<tr>
     <td>${i+1}. ${esc(r.desc)}</td>
-    <td class="r">${r.price>0 ? r.price.toFixed(2) : "—"}</td>
+    <td class="r">${r.price>0 ? fmt(r.price,d) : "—"}</td>
     <td class="r">${r.qty!==1 ? r.qty : ""}</td>
-    <td class="r bold">${c}${(r.price*r.qty).toFixed(2)}</td>
-  </tr>`).join("");
+    <td class="r bold">${c}${fmt(r.price*r.qty,d)}</td>
+  </tr>${noteRow}`;
+  }).join("");
 
   document.getElementById("out").innerHTML = `
   <div class="doc ${compactMode ? 'compact' : ''}">
@@ -479,6 +503,7 @@ function render(){
         <span class="total-lbl">Grand Total</span>
         <span class="total-spacer"></span>
         <span class="total-val">${c}${grand}</span>
+
       </div>
     </div>
 
