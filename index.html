@@ -229,7 +229,11 @@ textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
 /* terms — 上下各留 72px */
 .d-terms { margin: 72px 100px; padding: 14px 18px; background: #f8fafa; border-radius: 6px; }
 .terms-h { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--teal-d); margin-bottom: 7px; }
-.terms-b { font-size: 10px; color: #555; line-height: 1.6; white-space: pre-line; }
+.terms-b { font-size: 12px; color: #555; line-height: 1.8; white-space: pre-line; }
+.terms-b .t-row { display: flex; }
+.terms-b .t-num { min-width: 1.8em; flex-shrink: 0; }
+.terms-b .t-cont { flex: 1; }
+.terms-b .t-sub { padding-left: 1.8em; }
 
 /* signature */
 .d-sig { padding: 0 100px 40px; }
@@ -430,6 +434,21 @@ function renderTable(){
 function addRow(){ rows.push({desc:"",price:0,qty:1,note:""}); renderAll(); }
 function renderAll(){ renderTable(); render(); }
 
+function fmtTerms(txt){
+  return txt.split("\n").map(line => {
+    const m = line.match(/^(\s*)(\d+\.\s*)(.*)$/);
+    if(m){
+      return `<div class="t-row"><span class="t-num">${esc(m[2].trim())}</span><span class="t-cont">${esc(m[3])}</span></div>`;
+    }
+    // 縮排行（尾款那種）
+    const sub = line.match(/^(\s{2,})(.+)$/);
+    if(sub){
+      return `<div class="t-sub">${esc(sub[2])}</div>`;
+    }
+    return `<div>${esc(line)}</div>`;
+  }).join("");
+}
+
 function render(){
   const c   = cur();
   const no  = document.getElementById("qno").value;
@@ -506,7 +525,7 @@ function render(){
 
     <div class="d-terms">
       <div class="terms-h">Term</div>
-      <div class="terms-b">${trm ? esc(trm) : '<span class="ph-line" style="width:80%"></span><span class="ph-line" style="width:65%"></span><span class="ph-line" style="width:72%"></span><span class="ph-line" style="width:55%"></span>'}</div>
+      <div class="terms-b">${trm ? fmtTerms(trm) : '<span class="ph-line" style="width:80%"></span><span class="ph-line" style="width:65%"></span><span class="ph-line" style="width:72%"></span><span class="ph-line" style="width:55%"></span>'}</div>
     </div>
 
     <div class="d-sig">
